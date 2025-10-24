@@ -226,7 +226,7 @@ function StatItem({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-function DecisionPill({ verdict }: { verdict: 'keep' | 'review' }) {
+function DecisionPill({ verdict }: { verdict: 'keep' | 'archive' }) {
   const isKeep = verdict === 'keep';
   const classes = isKeep
     ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-500/60'

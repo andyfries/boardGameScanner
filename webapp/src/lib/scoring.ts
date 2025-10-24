@@ -2,36 +2,51 @@ import type { GameRecord } from '@/lib/catalog';
 
 export type Score = {
   value: number;
-  verdict: 'keep' | 'review';
+  verdict: 'keep' | 'archive';
   rationale: string;
 };
 
-/**
- * Placeholder scoring: blend ratings and activity.
- * Higher average/bayes and recent loans boost the score, duplicates lower it.
- */
 export function calculateScore(game: GameRecord): Score {
-  const rating = (game.average + game.bayes) / 2;
-  const loanRecency = daysSince(game.lastLoan);
-  const recencyScore = loanRecency <= 60 ? 0.2 : loanRecency <= 180 ? 0 : -0.2;
-  const duplicatePenalty = Math.min(game.duplicate, 2) * -0.1;
-  const base = rating / 10;
+  const meanRating = (game.average + game.bayes) / 2;
+  const lastLoanDate = new Date(game.lastLoan);
+  const archiveDueToRating = meanRating < 7;
+  const archiveDueToLoan = isBeforeJuly2024(lastLoanDate);
+  const verdict: Score['verdict'] = archiveDueToRating || archiveDueToLoan ? 'archive' : 'keep';
 
-  const value = clamp(base + recencyScore + duplicatePenalty, 0, 1);
   return {
-    value,
-    verdict: value >= 0.5 ? 'keep' : 'review',
-    rationale: `rating ${rating.toFixed(1)}, last loan ${game.lastLoan}, duplicates ${game.duplicate}`,
+    value: clamp(meanRating / 10, 0, 1),
+    verdict,
+    rationale: buildRationale(meanRating, game.lastLoan, archiveDueToRating, archiveDueToLoan),
   };
 }
 
-function daysSince(dateString: string): number {
-  const date = new Date(dateString);
-  if (Number.isNaN(date.getTime())) return Number.POSITIVE_INFINITY;
-  const diff = Date.now() - date.getTime();
-  return Math.floor(diff / (1000 * 60 * 60 * 24));
+function isBeforeJuly2024(date: Date) {
+  const cutoff = new Date('2024-07-01');
+  return Number.isNaN(date.getTime()) || date < cutoff;
 }
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
+}
+
+function buildRationale(
+  meanRating: number,
+  lastLoan: string,
+  archiveDueToRating: boolean,
+  archiveDueToLoan: boolean,
+) {
+  const reasons = [];
+  if (archiveDueToRating) {
+    reasons.push(`mean rating ${meanRating.toFixed(1)} (< 7)`);
+  } else {
+    reasons.push(`mean rating ${meanRating.toFixed(1)}`);
+  }
+
+  if (archiveDueToLoan) {
+    reasons.push(`last loan ${lastLoan || 'unknown'} (before Jul 2024)`);
+  } else {
+    reasons.push(`last loan ${lastLoan || 'unknown'}`);
+  }
+
+  return reasons.join(', ');
 }
