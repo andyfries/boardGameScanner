@@ -22,7 +22,7 @@ type ScanResponse = {
   };
   score: {
     value: number;
-    verdict: 'keep' | 'review';
+    verdict: 'keep' | 'archive';
     rationale: string;
   };
 };
