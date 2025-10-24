@@ -98,7 +98,7 @@ export default function Home() {
 
   return (
     <div className="min-h-dvh bg-slate-950 text-slate-100">
-      <main className="mx-auto flex w-full max-w-lg flex-col gap-6 px-4 py-8">
+      <main className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-6 px-4 py-6">
         <header>
           <h1 className="text-3xl font-semibold text-white">
             Board game scanner
@@ -108,118 +108,117 @@ export default function Home() {
           </p>
         </header>
 
-        <section className="space-y-4">
-          <div className="relative overflow-hidden rounded-3xl border border-slate-800 bg-black shadow-lg">
-            <Scanner
-              onScan={handleScan}
-              onError={(err) => {
-                console.error(err);
-                setError('Camera error—try manual entry');
-              }}
-              scanDelay={800}
-              constraints={{ facingMode: 'environment' }}
-              paused={!isScannerActive}
-              sound={false}
-              classNames={{
-                container: 'aspect-[3/4]',
-                video: 'h-full w-full object-cover',
-              }}
-            />
+        {!result && (
+          <section className="flex flex-col gap-4">
+            <div className="relative overflow-hidden rounded-3xl border border-slate-800 bg-black shadow-lg">
+              <Scanner
+                onScan={handleScan}
+                onError={(err) => {
+                  console.error(err);
+                  setError('Camera error—try manual entry');
+                }}
+                scanDelay={800}
+                constraints={{ facingMode: 'environment' }}
+                paused={!isScannerActive}
+                sound={false}
+                classNames={{
+                  container: 'aspect-[3/4]',
+                  video: 'h-full w-full object-cover',
+                }}
+              />
+              <div className="pointer-events-none absolute inset-0 border border-white/30" />
+            </div>
 
-            {!result && (
-              <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-4 text-white">
-              </div>
-            )}
-
-            {result && (
-              <div className="absolute inset-0 flex flex-col justify-between rounded-3xl bg-slate-950/90 p-5 text-white backdrop-blur-sm">
-                <header>
-                  <h2 className="text-3xl font-semibold leading-tight">
-                    {result.game.title}
-                  </h2>
-                  <p className="text-sm text-slate-400">{result.code}</p>
-                </header>
-
-                <div className="space-y-4">
-                  <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 mt-2">
-                    <div className="flex items-center justify-between">
-                      <DecisionPill verdict={result.score.verdict} />
-                    </div>
-                    <ul className="mt-3 space-y-1 text-sm">
-                      {result.score.reasons.map((reason) => (
-                        <li
-                          key={reason.id}
-                          className={`flex items-center gap-2 ${
-                            reason.type === 'positive'
-                              ? 'text-emerald-200'
-                              : 'text-red-200'
-                          }`}
-                        >
-                          <span
-                            aria-hidden
-                            className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-base ${
-                              reason.type === 'positive'
-                                ? 'bg-emerald-500/20'
-                                : 'bg-red-500/20'
-                            }`}
-                          >
-                            {reason.type === 'positive' ? '✓' : '⚠'}
-                          </span>
-                          <span>{reason.label}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <StatItem
-                      label="Average rating"
-                      value={formatRating(result.game.average)}
-                    />
-                    <StatItem
-                      label="Bayes rating"
-                      value={formatRating(result.game.bayes)}
-                    />
-                    <StatItem
-                      label="Last loan"
-                      value={formatLastLoan(result.game.lastLoan)}
-                      className="col-span-2"
-                    />
-                  </div>
-                </div>
-
+            <form onSubmit={handleSubmit} className="space-y-2 rounded-2xl bg-slate-900 p-4">
+              <label className="text-xs uppercase tracking-wide text-slate-500">
+                Manual entry
+              </label>
+              <div className="flex gap-2">
+                <input
+                  value={code}
+                  onChange={(event) => setCode(event.target.value.toUpperCase())}
+                  placeholder="47Z9PL"
+                  className="flex-1 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-base uppercase tracking-wide text-slate-100 placeholder:text-slate-600"
+                />
                 <button
-                  type="button"
-                  onClick={resetScanner}
-                  className="mt-4 w-full rounded-2xl bg-white/15 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/25"
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-emerald-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-900 disabled:text-emerald-300"
                 >
-                  Scan the next game
+                  {isSubmitting ? 'Lookup…' : 'Lookup'}
                 </button>
               </div>
-            )}
-          </div>
+            </form>
+          </section>
+        )}
 
-          <form onSubmit={handleSubmit} className="space-y-2 rounded-2xl bg-slate-900 p-4">
-            <label className="text-xs uppercase tracking-wide text-slate-500">
-              Manual entry
-            </label>
-            <div className="flex gap-2">
-              <input
-                value={code}
-                onChange={(event) => setCode(event.target.value.toUpperCase())}
-                placeholder="47Z9PL"
-                className="flex-1 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-base uppercase tracking-wide text-slate-100 placeholder:text-slate-600"
-              />
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-emerald-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-emerald-900 disabled:text-emerald-300"
-              >
-                {isSubmitting ? 'Lookup…' : 'Lookup'}
-              </button>
+        {result && (
+          <section className="space-y-4 rounded-3xl border border-slate-800 bg-slate-900 p-5 text-white shadow-lg">
+            <header>
+              <p className="text-xs uppercase tracking-wide text-slate-400">
+                Matched game
+              </p>
+              <h2 className="text-3xl font-semibold leading-tight">
+                {result.game.title}
+              </h2>
+              <p className="text-sm text-slate-300">Code {result.code}</p>
+            </header>
+
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+              <div className="flex items-center justify-between">
+                <DecisionPill verdict={result.score.verdict} />
+              </div>
+              <ul className="mt-3 space-y-1 text-sm">
+                {result.score.reasons.map((reason) => (
+                  <li
+                    key={reason.id}
+                    className={`flex items-center gap-2 ${
+                      reason.type === 'positive'
+                        ? 'text-emerald-200'
+                        : 'text-red-200'
+                    }`}
+                  >
+                    <span
+                      aria-hidden
+                      className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-base ${
+                        reason.type === 'positive'
+                          ? 'bg-emerald-500/20'
+                          : 'bg-red-500/20'
+                      }`}
+                    >
+                      {reason.type === 'positive' ? '✓' : '⚠'}
+                    </span>
+                    <span>{reason.label}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-          </form>
-        </section>
+
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <StatItem
+                label="Average rating"
+                value={formatRating(result.game.average)}
+              />
+              <StatItem
+                label="Bayes rating"
+                value={formatRating(result.game.bayes)}
+              />
+              <StatItem
+                label="Last loan"
+                value={formatLastLoan(result.game.lastLoan)}
+                className="col-span-2"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={resetScanner}
+              className="w-full rounded-2xl bg-white/15 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/25"
+            >
+              Scan the next game
+            </button>
+          </section>
+        )}
 
         {error && (
           <p className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
