@@ -128,15 +128,6 @@ export default function Home() {
 
             {!result && (
               <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-4 text-white">
-                <div className="text-sm text-white/80">
-                  Hold the QR tag inside the frame.
-                </div>
-                <div className="flex flex-col gap-1">
-                  <p className="text-2xl font-semibold">Ready to scan</p>
-                  <p className="text-sm text-white/70">
-                    Keep the box steady for a split second.
-                  </p>
-                </div>
               </div>
             )}
 
