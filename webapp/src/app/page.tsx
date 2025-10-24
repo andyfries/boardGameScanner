@@ -12,18 +12,15 @@ type ScanResponse = {
   code: string;
   game: {
     title: string;
-    type: string;
-    active: number;
-    loaned: number;
-    duplicate: number;
-    average: number;
-    bayes: number;
-    lastLoan: string;
+    lastLoan: string | null;
+    average: number | null;
+    bayes: number | null;
   };
   score: {
     value: number;
     verdict: 'keep' | 'archive';
     rationale: string;
+    reasons: Array<{ id: string; label: string; type: 'positive' | 'negative' }>;
   };
 };
 
@@ -122,6 +119,7 @@ export default function Home() {
               scanDelay={800}
               constraints={{ facingMode: 'environment' }}
               paused={!isScannerActive}
+              sound={false}
               classNames={{
                 container: 'aspect-[3/4]',
                 video: 'h-full w-full object-cover',
@@ -130,7 +128,14 @@ export default function Home() {
 
             {!result && (
               <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-4 text-white">
+                <div className="text-sm text-white/80">
+                  Hold the QR tag inside the frame.
+                </div>
                 <div className="flex flex-col gap-1">
+                  <p className="text-2xl font-semibold">Ready to scan</p>
+                  <p className="text-sm text-white/70">
+                    Keep the box steady for a split second.
+                  </p>
                 </div>
               </div>
             )}
@@ -144,35 +149,54 @@ export default function Home() {
                   <p className="text-sm text-slate-400">{result.code}</p>
                 </header>
 
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-slate-400">
-                        Score
-                      </p>
-                      <div className="flex items-baseline gap-3">
-                        <span className="text-5xl font-semibold">
-                          {(result.score.value * 100).toFixed(0)}
-                        </span>
-                        <span className="text-slate-400">/ 100</span>
-                      </div>
+                <div className="space-y-4">
+                  <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 mt-2">
+                    <div className="flex items-center justify-between">
+                      <DecisionPill verdict={result.score.verdict} />
                     </div>
-                    <DecisionPill verdict={result.score.verdict} />
+                    <ul className="mt-3 space-y-1 text-sm">
+                      {result.score.reasons.map((reason) => (
+                        <li
+                          key={reason.id}
+                          className={`flex items-center gap-2 ${
+                            reason.type === 'positive'
+                              ? 'text-emerald-200'
+                              : 'text-red-200'
+                          }`}
+                        >
+                          <span
+                            aria-hidden
+                            className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-base ${
+                              reason.type === 'positive'
+                                ? 'bg-emerald-500/20'
+                                : 'bg-red-500/20'
+                            }`}
+                          >
+                            {reason.type === 'positive' ? '✓' : '⚠'}
+                          </span>
+                          <span>{reason.label}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <StatItem
                       label="Average rating"
-                      value={result.game.average.toFixed(1)}
+                      value={formatRating(result.game.average)}
                     />
                     <StatItem
                       label="Bayes rating"
-                      value={result.game.bayes.toFixed(1)}
+                      value={formatRating(result.game.bayes)}
                     />
-                    <StatItem label="Type" value={result.game.type} />
-                    <StatItem label="Last loan" value={result.game.lastLoan} />
+                    <StatItem
+                      label="Last loan"
+                      value={formatLastLoan(result.game.lastLoan)}
+                      className="col-span-2"
+                    />
                   </div>
                 </div>
+
                 <button
                   type="button"
                   onClick={resetScanner}
@@ -217,9 +241,19 @@ export default function Home() {
   );
 }
 
-function StatItem({ label, value }: { label: string; value: string | number }) {
+function StatItem({
+  label,
+  value,
+  className = '',
+}: {
+  label: string;
+  value: string;
+  className?: string;
+}) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/60 px-3 py-2">
+    <div
+      className={`rounded-xl border border-slate-800 bg-slate-900/60 px-3 py-2 ${className}`}
+    >
       <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
       <p className="text-sm font-semibold text-white">{value}</p>
     </div>
@@ -230,11 +264,22 @@ function DecisionPill({ verdict }: { verdict: 'keep' | 'archive' }) {
   const isKeep = verdict === 'keep';
   const classes = isKeep
     ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-500/60'
-    : 'bg-amber-500/20 text-amber-200 border border-amber-500/60';
+    : 'bg-red-500/20 text-red-200 border border-red-500/60';
   const label = isKeep ? 'Keep' : 'Archive';
   return (
     <span className={`rounded-full px-4 py-2 text-sm font-semibold ${classes}`}>
       {label}
     </span>
   );
+}
+
+function formatRating(value: number | null): string {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value.toFixed(1);
+  }
+  return 'No rating';
+}
+
+function formatLastLoan(value: string | null): string {
+  return value ?? 'Unknown';
 }
